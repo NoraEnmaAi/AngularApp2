@@ -1,43 +1,36 @@
+
 FROM mcr.microsoft.com/dotnet/aspnet:8.0-nanoserver-1809 AS base
 WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
 
-# Build stage with Node.js for Angular
+
+# This stage is used to build the service project
 FROM mcr.microsoft.com/dotnet/sdk:8.0-nanoserver-1809 AS with-node
 WORKDIR /src
-
-# Download and extract Node.js
-RUN curl -o node.zip https://nodejs.org/dist/v18.18.0/node-v18.18.0-win-x64.zip
-RUN powershell -Command "Expand-Archive -Path node.zip -DestinationPath C:\\src\\node"
-
-# Set the PATH for Node.js
-RUN setx /M PATH "%PATH%;C:\\src\\node\\node-v18.18.0-win-x64"
-
-# Install Angular CLI
+RUN curl https://nodejs.org/dist/v18.18.0/node-v18.18.0-win-x64.zip --output node.zip
+RUN tar -xf node.zip
+USER ContainerAdministrator
+RUN setx /M path "%path%;C:\src\node-v18.18.0-win-x64"
+USER ContainerUser
 RUN npm install -g @angular/cli
 
 FROM with-node AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-
-# Copy and restore backend
 COPY ["AngularApp2.Server.csproj", "."]
-RUN dotnet restore "AngularApp2.Server.csproj"
-
-# Copy all backend files
+COPY ["angularapp2.client.esproj", "."]
+RUN dotnet restore "./AngularApp2.Server.csproj"
 COPY . .
-
-# Build backend
 WORKDIR "/src/AngularApp2.Server"
-RUN dotnet build "AngularApp2.Server.csproj" -c %BUILD_CONFIGURATION% -o /app/build
+RUN dotnet build "./AngularApp2.Server.csproj" -c %BUILD_CONFIGURATION% -o /app/build
 
-# Publish backend
+# This stage is used to publish the service project to be copied to the final stage
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "AngularApp2.Server.csproj" -c %BUILD_CONFIGURATION% -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "./AngularApp2.Server.csproj" -c %BUILD_CONFIGURATION% -o /app/publish /p:UseAppHost=false
 
-# Final runtime image
+# This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
