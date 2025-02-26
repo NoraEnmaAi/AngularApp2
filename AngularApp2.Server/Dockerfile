@@ -1,37 +1,49 @@
-
+# Base Image for Running the Application
 FROM mcr.microsoft.com/dotnet/aspnet:8.0-nanoserver-1809 AS base
 WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
 
-
-# This stage is used to build the service project
-FROM mcr.microsoft.com/dotnet/sdk:8.0-nanoserver-1809 AS with-node
+# Build Stage with Node.js & .NET SDK
+FROM mcr.microsoft.com/dotnet/sdk:8.0-nanoserver-1809 AS build-env
 WORKDIR /src
-RUN curl https://nodejs.org/dist/v18.18.0/node-v18.18.0-win-x64.zip --output node.zip
-RUN tar -xf node.zip
 
-RUN setx /M path "%path%;C:\src\node-v18.18.0-win-x64"
+# Install Node.js (Fix: Use a Proper Installation Method)
+RUN curl -o node.zip https://nodejs.org/dist/v18.18.0/node-v18.18.0-win-x64.zip && \
+    powershell -Command "Expand-Archive -Path node.zip -DestinationPath C:\\nodejs" && \
+    setx /M path "%path%;C:\nodejs"
 
+# Install Angular CLI
 RUN npm install -g @angular/cli
 
-FROM with-node AS build
-ARG BUILD_CONFIGURATION=Release
-WORKDIR /src
-COPY ["AngularApp2.Server.csproj", "."]
-COPY ["angularapp2.client.esproj", "."]
-RUN dotnet restore "./AngularApp2.Server.csproj"
+# Copy .NET Server and Client Projects (Fix: Use Correct Paths)
+COPY AngularApp2.Server/AngularApp2.Server.csproj AngularApp2.Server/
+COPY angularapp2.client/angularapp2.client.csproj angularapp2.client/
+RUN dotnet restore AngularApp2.Server/AngularApp2.Server.csproj
+
+# Copy Everything
 COPY . .
-WORKDIR "/src/AngularApp2.Server"
-RUN dotnet build "./AngularApp2.Server.csproj" -c %BUILD_CONFIGURATION% -o /app/build
 
-# This stage is used to publish the service project to be copied to the final stage
-FROM build AS publish
-ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./AngularApp2.Server.csproj" -c %BUILD_CONFIGURATION% -o /app/publish /p:UseAppHost=false
+# Build Backend
+WORKDIR /src/AngularApp2.Server
+RUN dotnet build -c Release -o /app/build
 
-# This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
+# Build Frontend
+WORKDIR /src/angularapp2.client
+RUN npm install
+RUN ng build --configuration production
+
+# Publish Backend
+FROM build-env AS publish
+WORKDIR /src/AngularApp2.Server
+RUN dotnet publish -c Release -o /app/publish /p:UseAppHost=false
+
+# Final Stage: Run the Application
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+
+# Copy Built Angular Files to wwwroot
+COPY --from=publish /src/angularapp2.client/dist/angularapp2.client /app/wwwroot
+
 ENTRYPOINT ["dotnet", "AngularApp2.Server.dll"]
