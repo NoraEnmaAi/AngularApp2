@@ -19,7 +19,7 @@ FROM with-node AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["AngularApp2.Server/AngularApp2.Server.csproj", "AngularApp2.Server/"]
-COPY ["angularapp2.client/angularapp2.client.esproj", "angularapp2.client/"]
+COPY ["../angularapp2.client/angularapp2.client.esproj", "../angularapp2.client/"]
 RUN dotnet restore "./AngularApp2.Server/AngularApp2.Server.csproj"
 COPY . .
 WORKDIR "/src/AngularApp2.Server"
