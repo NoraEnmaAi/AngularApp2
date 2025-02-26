@@ -1,9 +1,4 @@
-# See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual Studio uses this Dockerfile to build your images for faster debugging.
 
-# Depending on the operating system of the host machines(s) that will build or run the containers, the image specified in the FROM statement may need to be changed.
-# For more information, please see https://aka.ms/containercompat
-
-# This stage is used when running from VS in fast mode (Default for Debug configuration)
 FROM mcr.microsoft.com/dotnet/aspnet:8.0-nanoserver-1809 AS base
 WORKDIR /app
 EXPOSE 8080
@@ -23,20 +18,20 @@ RUN npm install -g @angular/cli
 FROM with-node AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["AngularApp1.Server/AngularApp1.Server.csproj", "AngularApp1.Server/"]
-COPY ["angularapp1.client/angularapp1.client.esproj", "angularapp1.client/"]
-RUN dotnet restore "./AngularApp1.Server/AngularApp1.Server.csproj"
+COPY ["AngularApp2.Server/AngularApp2.Server.csproj", "AngularApp2.Server/"]
+COPY ["angularapp2.client/angularapp2.client.esproj", "angularapp2.client/"]
+RUN dotnet restore "./AngularApp2.Server/AngularApp2.Server.csproj"
 COPY . .
-WORKDIR "/src/AngularApp1.Server"
-RUN dotnet build "./AngularApp1.Server.csproj" -c %BUILD_CONFIGURATION% -o /app/build
+WORKDIR "/src/AngularApp2.Server"
+RUN dotnet build "./AngularApp2.Server.csproj" -c %BUILD_CONFIGURATION% -o /app/build
 
 # This stage is used to publish the service project to be copied to the final stage
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./AngularApp1.Server.csproj" -c %BUILD_CONFIGURATION% -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "./AngularApp2.Server.csproj" -c %BUILD_CONFIGURATION% -o /app/publish /p:UseAppHost=false
 
 # This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "AngularApp1.Server.dll"]
+ENTRYPOINT ["dotnet", "AngularApp2.Server.dll"]
