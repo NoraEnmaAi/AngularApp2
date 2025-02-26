@@ -18,8 +18,8 @@ RUN npm install -g @angular/cli
 FROM with-node AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["AngularApp2.Server/AngularApp2.Server.csproj", "AngularApp2.Server/"]
-COPY ["AngularApp2.Server/angularapp2.client.esproj", "AngularApp2.Server/"]
+COPY ["AngularApp2.Server.csproj", "."]
+COPY ["angularapp2.client.esproj", "."]
 RUN dotnet restore "./AngularApp2.Server/AngularApp2.Server.csproj"
 COPY . .
 WORKDIR "/src/AngularApp2.Server"
