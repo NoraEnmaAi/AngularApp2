@@ -8,16 +8,15 @@ EXPOSE 8081
 FROM mcr.microsoft.com/dotnet/sdk:8.0-nanoserver-1809 AS build-env
 WORKDIR /src
 
-User ContainerAdministrator
 
 # Install Node.js (Fix: Use a Proper Installation Method)
-RUN powershell -Command \
-    Invoke-WebRequest -Uri "https://nodejs.org/dist/v18.18.0/node-v18.18.0-win-x64.zip" -OutFile "node.zip"; \
-    Expand-Archive -Path node.zip -DestinationPath C:\nodejs; \
-    setx PATH "%PATH%;C:\nodejs"
+RUN wget.exe -O node.zip https://nodejs.org/dist/v18.18.0/node-v18.18.0-win-x64.zip && \
+    powershell -Command "Expand-Archive -Path node.zip -DestinationPath C:\\nodejs" && \
+    setx PATH "%PATH%;C:\\nodejs"
 
 # Install Angular CLI
-RUN npm install -g @angular/cli
+# Install Angular CLI
+RUN C:\nodejs\node-v18.18.0-win-x64\npm.cmd install -g @angular/cli
 
 # Copy .NET Server and Client Projects (Fix: Use Correct Paths)
 COPY AngularApp2.Server/AngularApp2.Server.csproj AngularApp2.Server/
