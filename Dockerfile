@@ -18,7 +18,7 @@ RUN npm install -g @angular/cli
 
 # Copy .NET Server and Client Projects (Fix: Use Correct Paths)
 COPY AngularApp2.Server/AngularApp2.Server.csproj AngularApp2.Server/
-COPY angularapp2.client/angularapp2.client.csproj angularapp2.client/
+COPY angularapp2.client/angularapp2.client.esproj angularapp2.client/
 RUN dotnet restore AngularApp2.Server/AngularApp2.Server.csproj
 
 # Copy Everything
